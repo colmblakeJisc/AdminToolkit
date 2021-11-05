@@ -1,19 +1,8 @@
-#region: Clear old sessions from PS
-Write-host -ForegroundColor Yellow  "Clearing previous session connections to cloud servcies"
-Log-Entry "Clearing previous session connections to cloud servcies"
-$logins = get-azcontext
-foreach ($account in $logins)
-{
-Disconnect-AzAccount -Username $account.account
-}
-#endregion
-
 #region:Functions
 #Configuring logging... its a Function == When needing a log entry simply use: Log-Entry "Log text here"
 
 $LogPath = "C:\LogDump\"+[string](Get-Date -format yyyyMdd)+" NewCSCallQ.txt"
 Write-host -ForegroundColor Yellow  "Logs to be found at c:\logdump"
-Log-Entry "Logs to be found at c:\logdump"
 #log entry with timestamp
 Function Log-Entry {
                 $Log = [string](Get-Date)+": "+$args
@@ -35,9 +24,25 @@ Log-EntrySimple "_________Starting Code Pass___________"
 Log-EntrySimple "______________________________________"
 
 #connect to AAD - no credentials cached to comply with Modern Auth
-Write-host -ForegroundColor Yellow  "Connecting to AzureAD"
-log-entry "Connecting to AzureAD"
-Connect-AzureAD
+$ADContext = ""
+$ADContext = Get-AzureADCurrentSessionInfo -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+if ($ADContext)
+{
+    $confirmation = Read-Host "Continue Deployment to : $($ADContext.TenantDomain) Are you Sure You Want To Proceed (y/n)"
+    if ($confirmation -eq 'n') 
+    {
+        Write-host -ForegroundColor Yellow  "Connecting to AzureAD"
+        Disconnect-AzureAD
+        log-entry "Connecting to AzureAD"
+        Connect-AzureAD
+    }
+}
+Else
+{
+        Write-host -ForegroundColor Yellow  "Connecting to AzureAD"
+        log-entry "Connecting to AzureAD"
+        Connect-AzureAD
+}
 Write-host -ForegroundColor Yellow  "MicrosoftTeams"
 log-entry "MicrosoftTeams"
 Connect-MicrosoftTeams
@@ -74,6 +79,9 @@ $AppID          =  "11cd3e2e-fccb-42ad-ad00-878b93575e07"
 #loop testing - $Queue = $QueueName[0] - create an array of a single item
 foreach ($Queue in $QueueName) 
 {
+    #clear variables for checking prior to loop
+    $CheckRA = ""
+    $CheckQueue = ""
     #variable to build CQ name string
     $StrCQ           =  "CQ-"+$Queue.Name
     #variable to build check queue test
@@ -82,9 +90,11 @@ foreach ($Queue in $QueueName)
     $StrRA           =  "RA-"+$Queue.Name
     #variable to build UPN for the check process - takes name, replaces spaces then rebuilds as UPN 
     $UPN            = $($StrRA+"@"+$onMSDomainname).Replace(" ","")
+    $UPN            = $UPN.Replace("&","And")
     #variable to build check resource account for the while function
-    $CheckRA         = Get-CsOnlineApplicationInstance -identity $UPN
-
+    Write-Host -ForegroundColor Yellow "checking Get-CsOnlineApplicationInstance with the following indentity " $UPN
+    $CheckRA         = Get-CsOnlineApplicationInstance -identity $UPN -ErrorAction SilentlyContinue
+    
 
     #if something came back then value is true,then skip. Else, with no value create call queue
     If($CheckQueue) 
@@ -139,8 +149,8 @@ foreach ($Queue in $QueueName)
 
         #check the queue has been created
         $CheckQueue     = Get-CsCallQueue -NameFilter $StrCQ           
-        Write-host -ForegroundColor green "Successfully created queue CQ-"$StrCQ
-        Log-entry -ForegroundColor green "Successfully created queue CQ-"$StrCQ
+        Write-host -ForegroundColor green "Successfully created queue "$StrCQ
+        Log-entry -ForegroundColor green "Successfully created queue "$StrCQ
     }  
 }
 

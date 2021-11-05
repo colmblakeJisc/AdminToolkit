@@ -1,6 +1,5 @@
 ﻿#region: Clear old sessions from PS
 Write-host -ForegroundColor Yellow  "Clearing previous session connections to cloud servcies"
-Log-Entry "Clearing previous session connections to cloud servcies"
 $logins = get-azcontext
 foreach ($account in $logins)
 {
@@ -14,7 +13,6 @@ Disconnect-AzAccount -Username $account.account
 
 $LogPath = "C:\LogDump\"+[string](Get-Date -Format yyyyMdd)+" NewCSCallQ.txt"
 Write-host -ForegroundColor Yellow  "Logs to be found at c:\logdump"
-Log-Entry "Logs to be found at c:\logdump"
 #log entry with timestamp
 Function Log-Entry {
                 $Log = [string](Get-Date)+": "+$args

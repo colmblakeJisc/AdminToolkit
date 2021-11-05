@@ -1,12 +1,3 @@
-#region: Clear old sessions from PS
-Write-host -ForegroundColor Yellow  "Clearing previous session connections to cloud servcies"
-$logins = get-azcontext
-foreach ($account in $logins)
-{
-Disconnect-AzAccount -Username $account.account
-}
-#endregion
-
 #region:Functions
 #Configuring logging... its a Function == When needing a log entry simply use: Log-Entry "Log text here"
 
@@ -26,12 +17,38 @@ Function Log-EntrySimple {
 
 #endregion
 
+#region:script setup
+
+#starting code run divider
 Log-EntrySimple "______________________________________"
 Log-EntrySimple "_________Starting Code Pass___________"
 Log-EntrySimple "______________________________________"
 
-#region:script setup
-
+#connect to AAD - no credentials cached to comply with Modern Auth
+$ADContext = ""
+$ErrorActionPreference= 'silentlycontinue' #seems to be a bug with the command below currently https://github.com/Azure/azure-docs-powershell-azuread/issues/591
+$ADContext = Get-AzureADCurrentSessionInfo
+$ErrorActionPreference= 'continue' #returning back to default 
+if ($ADContext)
+{
+    $confirmation = Read-Host "Continue Deployment to : $($ADContext.TenantDomain) Are you Sure You Want To Proceed (y/n)"
+    if ($confirmation -eq 'n') 
+    {
+        Write-host -ForegroundColor Yellow  "Connecting to AzureAD"
+        Disconnect-AzureAD
+        log-entry "Connecting to AzureAD"
+        Connect-AzureAD
+    }
+}
+Else
+{
+        Write-host -ForegroundColor Yellow  "Connecting to AzureAD"
+        log-entry "Connecting to AzureAD"
+        Connect-AzureAD
+}
+Write-host -ForegroundColor Yellow  "MicrosoftTeams"
+log-entry "MicrosoftTeams"
+Connect-MicrosoftTeams
 ##connect to EoL - no credentials cached to comply with Modern Auth
 Write-host -ForegroundColor Yellow  "Connecting to EoL"
 log-entry "Connecting to EoL"

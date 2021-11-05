@@ -25,7 +25,9 @@ Log-EntrySimple "______________________________________"
 
 #connect to AAD - no credentials cached to comply with Modern Auth
 $ADContext = ""
-$ADContext = Get-AzureADCurrentSessionInfo -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+$ErrorActionPreference= 'silentlycontinue' #seems to be a bug with the command below currently https://github.com/Azure/azure-docs-powershell-azuread/issues/591
+$ADContext = Get-AzureADCurrentSessionInfo
+$ErrorActionPreference= 'continue' #returning back to default 
 if ($ADContext)
 {
     $confirmation = Read-Host "Continue Deployment to : $($ADContext.TenantDomain) Are you Sure You Want To Proceed (y/n)"
